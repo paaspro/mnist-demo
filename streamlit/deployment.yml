@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mnistapp
+  labels:
+    application: mnistapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: mnistapp
+  template:
+    metadata:
+      labels:
+        name: mnistapp
+    spec:
+      containers:
+        - name: mnistapp
+          image: "cgshome2/mnistapp:latest"
+          ports:
+            - containerPort: 8501
+              protocol: TCP
+          volumeMounts:
+          - name: tz-config
+            mountPath: /etc/localtime
+      imagePullSecrets:
+        - name: regcred
+      volumes:
+      - name: tz-config
+        hostPath:
+          path: /usr/share/zoneinfo/Asia/Seoul
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mnistapp
+  labels:
+      application: mnistapp
+spec:
+  ports:
+  - port: 8501
+    protocol: TCP
+    targetPort: 8501
+  selector:
+    name: mnistapp
+
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: mnistapp
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+
+spec:
+  rules:
+  - host: mnistapp.example.com
+    http:
+     paths:
+     - path: /
+       backend:
+        serviceName: mnistapp
+        servicePort: 8501
